@@ -161,6 +161,7 @@ async def dice_(ctx):
     #await ctx.send(dice[result])
     await ctx.send(dice[result])
 
+
 @commands.has_permissions(administrator=True)
 @bot.command(aliases = ['joinhere', 'joinchannel', 'creationchannel'])
 async def add_creation_channel(ctx, channel_id: int = None):
@@ -174,7 +175,7 @@ async def add_creation_channel(ctx, channel_id: int = None):
         #Add the channel_id to storage.json
         with open('storage.json') as data:
             storage = json.load(data)
-        if channel_id not in storage['creation_channels']:
+        if str(channel_id) not in storage['creation_channels']:
             storage['creation_channels'].append(channel_id)
             #Return a confirm message
             return_message = f'<#{channel_id}> added to the list'
@@ -185,10 +186,10 @@ async def add_creation_channel(ctx, channel_id: int = None):
             await ctx.send(return_message)
         with open('storage.json', 'w') as data:
             json.dump(storage, data)
- 
-@commands.has_permissions(administrator=True) 
+
+@commands.has_permissions(administrator=True)
 @bot.command(aliases = ['joinheredel', 'joinchanneldel', 'creationchanneldel'])
-async def del_creation_channel(ctx, channel_id):
+async def del_creation_channel(ctx, channel_id :int):
     #Remove the channel_id from storage.json
     with open('storage.json') as data:
         storage = json.load(data)
@@ -220,7 +221,7 @@ async def on_voice_state_update(user, before, after):
     #Create Channel
     if after.channel == None:
         pass
-    elif str(after.channel.id) in storage['creation_channels']:
+    elif after.channel.id in storage['creation_channels']:
         guild = user.guild
         channel = await guild.create_voice_channel(f"{user.display_name}'s channel", category = after.channel.category, bitrate = after.channel.bitrate, user_limit = after.channel.user_limit)
         await user.move_to(channel)
@@ -276,5 +277,5 @@ async def nickfind_(ctx, *arg):
 
 with open('token.txt', 'r') as f:
     token = f.readline()
-    
+print(token)
 bot.run(token)
