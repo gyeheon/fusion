@@ -36,7 +36,7 @@ async def on_member_join(member):
     channel = await bot.fetch_channel(865525769623175168)
     #Create Embed
     current_time = time.strftime('%Y.%m.%d | %X')
-    embed = discord.Embed(title = 'New Member Joined', color=0x000000)
+    embed = discord.Embed(title = '<  New Member Joined  >', color=0x000000)
     embed.add_field(name='Name', value=member.mention, inline=False)
     embed.add_field(name='Sign up', value=current_time, inline=False)
     #Send a new message with Buttons (for admin)
