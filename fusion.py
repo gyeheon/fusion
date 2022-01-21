@@ -33,7 +33,7 @@ async def on_member_join(member):
     with open('storage.json') as data:
         storage = json.load(data)
     guild = member.guild
-    channel = await bot.fetch_channel(653594139811643412)
+    channel = await bot.fetch_channel(865525769623175168)
     #Create Embed
     current_time = time.strftime('%Y.%m.%d | %X')
     embed = discord.Embed(title = 'New Member Joined', color=0x000000)
