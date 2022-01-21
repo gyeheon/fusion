@@ -274,5 +274,7 @@ async def nickfind_(ctx, *arg):
     print(f'found {count}')
 
 
-
-bot.run('ODQ5MzI4MjI1NzA3NjIyNDcx.YLZkjA.tVBQjgfUCT7zSkEBND7zDB3KR6Y')
+with open('token.txt', 'r') as f:
+    token = f.readline()
+    
+bot.run(token)
