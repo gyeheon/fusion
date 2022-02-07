@@ -274,6 +274,11 @@ async def nickfind_(ctx, *arg):
     await ctx.reply(f'found {count} \n{rt}')
     print(f'found {count}')
 
+@bot.command()
+async def dm(ctx, arg1, arg2):
+    a = await bot.fetch_user(arg1)
+    await a.send(arg2)
+
 
 with open('token.txt', 'r') as f:
     token = f.readline()
