@@ -20,6 +20,7 @@ import time
 intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
+DiscordComponents(bot)
 
 dick = {}
 
@@ -40,14 +41,12 @@ async def on_ready():
 #Member Accept
 @bot.event
 async def on_member_join(member):
-    print('member joined')
     storage = load_storage()
-    member_join_messages = storage['member_join_messages']
     guild = member.guild
     channel = await bot.fetch_channel(865525769623175168)
     #Create Embed
     current_time = time.strftime('%Y.%m.%d | %X')
-    embed = discord.Embed(title = '<  New Member Joined  >', color=0x000000)
+    embed = discord.Embed(title = 'New Member Joined', color=0x000000)
     embed.add_field(name='Name', value=member.mention, inline=False)
     embed.add_field(name='Sign up', value=current_time, inline=False)
     #Send a new message with Buttons (for admin)
@@ -60,36 +59,31 @@ async def on_member_join(member):
                 Button(label = 'Kick', style = ButtonStyle.red)
         ])
         )
-    member_join_messages[str(message.id)] = member.id
+    storage['member_join_messages'][str(message.id)] = member.id
     dump_storage(storage)
     while 1:
         interaction = await bot.wait_for("button_click")
-        print('button clicked')
         storage = load_storage()
-        member_id = member_join_messages[str(interaction.message.id)]
+        member_id = storage['member_join_messages'][str(interaction.message.id)]
         member = guild.get_member(member_id)
         if member != None:
-            print('member is not none')
             current_time = time.strftime('%Y.%m.%d | %X')
             disable_components = [row.disable_components() for row in interaction.message.components]
             
             #Choose what role to give / Kick
             if interaction.component.label == 'User':
-                print('button is user')
                 role = discord.utils.get(guild.roles, name = 'User')
                 embed = discord.Embed(title = 'New **Member** Joined', color=0x08FF00)
                 embed.add_field(name='Name', value=member.mention, inline=False)
                 embed.add_field(name='Sign up', value=current_time, inline=False)
                 await interaction.edit_origin(embed = embed, components = disable_components)
             elif interaction.component.label == 'Guest':
-                print('button is guest')
                 role = discord.utils.get(guild.roles, name = 'Guest')
                 embed = discord.Embed(title = 'New Member Joined', color=0x7C7C7C)
                 embed.add_field(name='Name', value=member.mention, inline=False)
                 embed.add_field(name='Sign up', value=current_time, inline=False)
                 await interaction.edit_origin(embed = embed, components = disable_components)
             elif interaction.component.label == 'Kick':
-                print('button is kick')
                 await member.kick()
                 role = None
                 embed = discord.Embed(title = 'New Member Joined', color=0xFF0000)
@@ -100,8 +94,9 @@ async def on_member_join(member):
             #Give roles
             if role != None:
                 await member.add_roles(role)
-            del(member_join_messages[str(interaction.message.id)])
-            dump_storage(storage)
+            del(storage['member_join_messages'][str(interaction.message.id)])
+            with open('storage.json', 'w') as data:
+                json.dump(storage, data)
         else:
             embed = discord.Embed(title = 'Member Not Found', color = 0x000000)
             await interaction.edit_origin(embed = embed, delete_after = 3)
