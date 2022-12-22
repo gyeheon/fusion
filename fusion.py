@@ -32,6 +32,8 @@ def dump_storage(storage):
     with open('storage.json', 'w') as data:
         json.dump(storage, data)
 
+storage = load_storage()
+
 @bot.event
 async def on_ready():
     print(bot.user.id)
@@ -180,14 +182,10 @@ async def dice_(ctx):
 async def add_creation_channel(ctx, channel_id: int = None):
     if channel_id == None:
         await ctx.send('List of *Join to Create* Channels\n')
-        with open('storage.json') as data:
-            storage = json.load(data)
         for i in storage['creation_channels']:
             await ctx.send(f'<#{i}>')
     else:
         #Add the channel_id to storage.json
-        with open('storage.json') as data:
-            storage = json.load(data)
         if str(channel_id) not in storage['creation_channels']:
             storage['creation_channels'].append(channel_id)
             #Return a confirm message
@@ -197,15 +195,12 @@ async def add_creation_channel(ctx, channel_id: int = None):
             #Return an error message
             return_message = f'<#{channel_id}> is already in the list'
             await ctx.send(return_message)
-        with open('storage.json', 'w') as data:
-            json.dump(storage, data)
+        dump_storage(storage)
 
 @commands.has_permissions(administrator=True)
 @bot.command(aliases = ['joinheredel', 'joinchanneldel', 'creationchanneldel'])
 async def del_creation_channel(ctx, channel_id :int):
     #Remove the channel_id from storage.json
-    with open('storage.json') as data:
-        storage = json.load(data)
     if channel_id in storage['creation_channels']:
         storage['creation_channels'].remove(channel_id)
         #Return a confirm message
@@ -215,41 +210,38 @@ async def del_creation_channel(ctx, channel_id :int):
         #Return an error message
         return_message = f'<#{channel_id}> is not in the list'
         await ctx.send(return_message)
-    with open('storage.json', 'w') as data:
-        json.dump(storage, data)
+    dump_storage(storage)
     
  
 @bot.event
 async def on_voice_state_update(user, before, after):
-    with open('storage.json') as data:
-        storage = json.load(data)
     #Delete Channel
-    if before.channel == None:
+    try:
+        if before.channel.id in storage['created_channels'] and len([i for i in before.channel.members if i.bot == False]) == 0:
+            storage['created_channels'].remove(before.channel.id)
+            await before.channel.delete()
+            dump_storage(storage)
+    except:
         pass
-    elif before.channel.id in storage['created_channels'] and str(before.channel.members).count('bot=False') == 0:
-        await before.channel.delete()
-        storage['created_channels'].remove(before.channel.id)
-        with open('storage.json', 'w') as data:
-            json.dump(storage, data)
+
     #Create Channel
-    if after.channel == None:
+    try:
+        if before.channel != after.channel and after.channel.id in storage['creation_channels']:
+            guild = member.guild
+
+            v_channel = await guild.create_voice_channel(f"{random.randint(1,100)}", category = after.channel.category, bitrate = after.channel.bitrate, user_limit = after.channel.user_limit)
+            storage['created_channels'].append(v_channel.id)
+
+            dump_storage(storage)
+            await member.move_to(v_channel)
+    except:
         pass
-    elif after.channel.id in storage['creation_channels']:
-        guild = user.guild
-        channel = await guild.create_voice_channel(f"{user.display_name}'s channel", category = after.channel.category, bitrate = after.channel.bitrate, user_limit = after.channel.user_limit)
-        await user.move_to(channel)
-        if channel.id not in storage['created_channels']:
-            storage['created_channels'].append(channel.id)
-        with open('storage.json', 'w') as data:
-            json.dump(storage, data)
 
 @commands.has_permissions(administrator=True)
 @bot.command(aliases=['clear','청소'])
 async def clear_(ctx, li):
     await ctx.channel.purge(limit = int(li) + 1)
-    a = await ctx.send(f"{ctx.author.mention}, {int(li)}개의 메세지 삭제.")
-    await asyncio.sleep(3)
-    await a.delete()
+    a = await ctx.send(f"{ctx.author.mention}, {int(li)}개의 메세지 삭제.", delete_after = 3)
 
 @bot.command(aliases=['타이머','timer'])
 async def timer_(ctx,arg):
