@@ -12,15 +12,14 @@ import requests
 from bs4 import BeautifulSoup
 import asyncio
 import json
-from discord_components import *
+from discord.ui import Button, View
 import time
 
 
 
-intents = discord.Intents.default()
-intents.members = True
+intents = discord.Intents.all()
+#intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
-DiscordComponents(bot)
 
 dick = {}
 
@@ -43,6 +42,10 @@ async def on_ready():
 #Member Accept
 @bot.event
 async def on_member_join(member):
+    user_button = Button(label = 'User', style = discord.ButtonStyle.green, custom_id = 'user')
+    #guest_button = Button(label = 'Guest', style = discord.ButtonStyle.grey, custom_id = 'guest')
+    kick_button = Button(label = 'Kick', style = discord.ButtonStyle.red, custom_id = 'kick')
+
     storage = load_storage()
     guild = member.guild
     channel = await bot.fetch_channel(865525769623175168)
@@ -50,58 +53,46 @@ async def on_member_join(member):
     current_time = time.strftime('%Y.%m.%d | %X')
     embed = discord.Embed(title = 'New Member Joined', color=0x000000)
     embed.add_field(name='Name', value=member.mention, inline=False)
-    embed.add_field(name='Sign up', value=current_time, inline=False)
+    embed.add_field(name='Joined', value=current_time, inline=False)
     #Send a new message with Buttons (for admin)
-    message = await channel.send(
-        embed=embed, 
-        components = 
-            ActionRow([
-                Button(label = 'User', style = ButtonStyle.green),
-                Button(label = 'Guest', style = ButtonStyle.grey),
-                Button(label = 'Kick', style = ButtonStyle.red)
-        ])
-        )
-    storage['member_join_messages'][str(message.id)] = member.id
-    dump_storage(storage)
-    while 1:
-        interaction = await bot.wait_for("button_click")
-        storage = load_storage()
-        member_id = storage['member_join_messages'][str(interaction.message.id)]
-        member = guild.get_member(member_id)
+    async def callback(interaction):
         if member != None:
-            current_time = time.strftime('%Y.%m.%d | %X')
-            disable_components = [row.disable_components() for row in interaction.message.components]
-            
-            #Choose what role to give / Kick
-            if interaction.component.label == 'User':
+            nonlocal embed
+            user_button.disabled = kick_button.disabled = True
+            message = interaction.message
+            await message.edit(embed = embed, view = view)
+
+            if interaction.data['custom_id'] == 'user':
+                approve_time = time.strftime('%Y.%m.%d | %X')
                 role = discord.utils.get(guild.roles, name = 'User')
-                embed = discord.Embed(title = 'New **Member** Joined', color=0x08FF00)
-                embed.add_field(name='Name', value=member.mention, inline=False)
-                embed.add_field(name='Sign up', value=current_time, inline=False)
-                await interaction.edit_origin(embed = embed, components = disable_components)
-            elif interaction.component.label == 'Guest':
-                role = discord.utils.get(guild.roles, name = 'Guest')
-                embed = discord.Embed(title = 'New Member Joined', color=0x7C7C7C)
-                embed.add_field(name='Name', value=member.mention, inline=False)
-                embed.add_field(name='Sign up', value=current_time, inline=False)
-                await interaction.edit_origin(embed = embed, components = disable_components)
-            elif interaction.component.label == 'Kick':
-                await member.kick()
-                role = None
-                embed = discord.Embed(title = 'New Member Joined', color=0xFF0000)
-                embed.add_field(name='Name', value=member.mention, inline=False)
-                embed.add_field(name='Sign up', value=current_time, inline=False)
-                await interaction.edit_origin(embed = embed, components = disable_components)
-            
-            #Give roles
-            if role != None:
+                embed.color = 0x00FF00
+                embed.add_field(name = 'Approved', value = approve_time, inline = False)
                 await member.add_roles(role)
-            del(storage['member_join_messages'][str(interaction.message.id)])
-            with open('storage.json', 'w') as data:
-                json.dump(storage, data)
+            # elif interaction.data['custom_id'] == 'guest':
+            #     role = discord.utils.get(guild.roles, name = 'Guest')
+            #     embed = discord.Embed(title = 'New Guest Joined', color = 0x7C7C7C)
+            #     embed.add_field(name='Name', value=member.mention, inline=False)
+            #     embed.add_field(name='Sign up', value=current_time, inline=False)
+            elif interaction.data['custom_id'] == 'kick':
+                kick_time = time.strftime('%Y.%m.%d | %X')
+                embed.title = f'{member.name}#{member.discriminator} Kicked'
+                embed.color = 0xFF0000
+                embed.add_field(name = 'Kicked', value = kick_time, inline = False)
+                await member.kick()
+            await interaction.response.edit_message(embed = embed)
         else:
             embed = discord.Embed(title = 'Member Not Found', color = 0x000000)
-            await interaction.edit_origin(embed = embed, delete_after = 3)
+            await interaction.response.edit_message(embed = embed)
+        storage
+    user_button.callback = kick_button.callback = callback
+    view = View()
+    view.add_item(user_button)
+    #view.add_item(guest_button)
+    view.add_item(kick_button)
+    await channel.send(embed = embed, view = view)
+
+    # storage['member_join_messages'][str(message.id)] = member.id
+    # dump_storage(storage)   
 
 # 참고 : 코루틴과 태스크 https://docs.python.org/ko/3/library/asyncio-task.html
 async def channel_good(ctx):
