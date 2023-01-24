@@ -172,7 +172,7 @@ async def add_creation_channel(ctx, channel_id: int = None):
             await ctx.send(f'<#{i}>')
     else:
         #Add the channel_id to storage.json
-        if str(channel_id) not in storage['creation_channels']:
+        if channel_id not in storage['creation_channels']:
             storage['creation_channels'].append(channel_id)
             #Return a confirm message
             return_message = f'<#{channel_id}> added to the list'
@@ -200,7 +200,7 @@ async def del_creation_channel(ctx, channel_id :int):
     
  
 @bot.event
-async def on_voice_state_update(user, before, after):
+async def on_voice_state_update(member: member, before, after):
     #Delete Channel
     try:
         if before.channel.id in storage['created_channels'] and len([i for i in before.channel.members if i.bot == False]) == 0:
